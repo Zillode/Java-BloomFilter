@@ -11,6 +11,12 @@
  *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * If you want to avoid adding another library to your project, you may copy
+ * this code directly into your project if you leave the LGPL-comment in place
+ * and reference the java-bloomfilter web page:
+ * https://github.com/magnuss/java-bloomfilter
+ *
  */
 
 package com.skjegstad.utils;
