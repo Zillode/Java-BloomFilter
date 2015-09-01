@@ -23,6 +23,7 @@ package com.skjegstad.utils;
 
 import java.io.Serializable;
 import java.nio.charset.Charset;
+import java.security.DigestException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.BitSet;
@@ -53,17 +54,7 @@ public class BloomFilter<E> implements Serializable {
 
     static final Charset charset = Charset.forName("UTF-8"); // encoding used for storing hash values as strings
 
-    static final String hashName = "MD5"; // MD5 gives good enough accuracy in most circumstances. Change to SHA1 if it's needed
-    static final MessageDigest digestFunction;
-    static { // The digest method is reused between instances
-        MessageDigest tmp;
-        try {
-            tmp = java.security.MessageDigest.getInstance(hashName);
-        } catch (NoSuchAlgorithmException e) {
-            tmp = null;
-        }
-        digestFunction = tmp;
-    }
+    static final MD4 digestFunction = new MD4(); // The digest method is reused between instances
 
     /**
       * Constructs an empty Bloom filter. The total length of the Bloom filter will be
@@ -129,8 +120,9 @@ public class BloomFilter<E> implements Serializable {
      * @param val specifies the input data.
      * @param charset specifies the encoding of the input data.
      * @return digest as long.
+     * @throws DigestException 
      */
-    public static int createHash(String val, Charset charset) {
+    public static int createHash(String val, Charset charset) throws DigestException {
         return createHash(val.getBytes(charset));
     }
 
@@ -139,8 +131,9 @@ public class BloomFilter<E> implements Serializable {
      *
      * @param val specifies the input data. The encoding is expected to be UTF-8.
      * @return digest as long.
+     * @throws DigestException 
      */
-    public static int createHash(String val) {
+    public static int createHash(String val) throws DigestException {
         return createHash(val, charset);
     }
 
@@ -149,8 +142,9 @@ public class BloomFilter<E> implements Serializable {
      *
      * @param data specifies input data.
      * @return digest as long.
+     * @throws DigestException 
      */
-    public static int createHash(byte[] data) {
+    public static int createHash(byte[] data) throws DigestException {
         return createHashes(data, 1)[0];
     }
 
@@ -162,8 +156,9 @@ public class BloomFilter<E> implements Serializable {
      * @param data specifies input data.
      * @param hashes number of hashes/int's to produce.
      * @return array of int-sized hashes
+     * @throws DigestException 
      */
-    public static int[] createHashes(byte[] data, int hashes) {
+    public static int[] createHashes(byte[] data, int hashes) throws DigestException {
         int[] result = new int[hashes];
 
         int k = 0;
@@ -171,9 +166,10 @@ public class BloomFilter<E> implements Serializable {
         while (k < hashes) {
             byte[] digest;
             synchronized (digestFunction) {
-                digestFunction.update(salt);
+                digestFunction.engineUpdate(salt);
                 salt++;
-                digest = digestFunction.digest(data);                
+                digestFunction.engineDigest(data);
+                digest = digestFunction.engineDigest();
             }
         
             for (int i = 0; i < digest.length/4 && k < hashes; i++) {
@@ -299,8 +295,9 @@ public class BloomFilter<E> implements Serializable {
      * toString() method is used as input to the hash functions.
      *
      * @param element is an element to register in the Bloom filter.
+     * @throws DigestException 
      */
-    public void add(E element) {
+    public void add(E element) throws DigestException {
        add(element.toString().getBytes(charset));
     }
 
@@ -308,8 +305,9 @@ public class BloomFilter<E> implements Serializable {
      * Adds an array of bytes to the Bloom filter.
      *
      * @param bytes array of bytes to add to the Bloom filter.
+     * @throws DigestException 
      */
-    public void add(byte[] bytes) {
+    public void add(byte[] bytes) throws DigestException {
        int[] hashes = createHashes(bytes, k);
        for (int hash : hashes)
            bitset.set(Math.abs(hash % bitSetSize), true);
@@ -319,8 +317,9 @@ public class BloomFilter<E> implements Serializable {
     /**
      * Adds all elements from a Collection to the Bloom filter.
      * @param c Collection of elements.
+     * @throws DigestException 
      */
-    public void addAll(Collection<? extends E> c) {
+    public void addAll(Collection<? extends E> c) throws DigestException {
         for (E element : c)
             add(element);
     }
@@ -332,8 +331,9 @@ public class BloomFilter<E> implements Serializable {
      *
      * @param element element to check.
      * @return true if the element could have been inserted into the Bloom filter.
+     * @throws DigestException 
      */
-    public boolean contains(E element) {
+    public boolean contains(E element) throws DigestException {
         return contains(element.toString().getBytes(charset));
     }
 
@@ -344,8 +344,9 @@ public class BloomFilter<E> implements Serializable {
      *
      * @param bytes array of bytes to check.
      * @return true if the array could have been inserted into the Bloom filter.
+     * @throws DigestException 
      */
-    public boolean contains(byte[] bytes) {
+    public boolean contains(byte[] bytes) throws DigestException {
         int[] hashes = createHashes(bytes, k);
         for (int hash : hashes) {
             if (!bitset.get(Math.abs(hash % bitSetSize))) {
@@ -361,8 +362,9 @@ public class BloomFilter<E> implements Serializable {
      * probability of this being correct.
      * @param c elements to check.
      * @return true if all the elements in c could have been inserted into the Bloom filter.
+     * @throws DigestException 
      */
-    public boolean containsAll(Collection<? extends E> c) {
+    public boolean containsAll(Collection<? extends E> c) throws DigestException {
         for (E element : c)
             if (!contains(element))
                 return false;

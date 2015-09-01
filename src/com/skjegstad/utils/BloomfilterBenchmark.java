@@ -14,6 +14,7 @@
  */
 package com.skjegstad.utils;
 
+import java.security.DigestException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -24,14 +25,14 @@ import java.util.Random;
  * @author Magnus Skjegstad
  */
 public class BloomfilterBenchmark {
-    static int elementCount = 50000; // Number of elements to test
+    static int elementCount = 500000; // Number of elements to test
 
     public static void printStat(long start, long end) {
         double diff = (end - start) / 1000.0;
         System.out.println(diff + "s, " + (elementCount / diff) + " elements/s");
     }
 
-    public static void main(String[] argv) {
+    public static void main(String[] argv) throws DigestException {
         
 
         final Random r = new Random();
